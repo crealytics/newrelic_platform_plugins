@@ -5,6 +5,7 @@ require "bundler/setup"
 require "newrelic_plugin"
 
 require 'resque'
+require 'resque-latency'
 require 'redis'
 
 module NewRelicResqueAgent
@@ -42,8 +43,10 @@ module NewRelicResqueAgent
         report_metric "Jobs/Rate/Failed", "Jobs/Second",           @total_failed.process(info[:failed])
         report_metric "Queues", "Queues",                     info[:queues]
         report_metric "Jobs/Failed", "Jobs",                  info[:failed] || 0
-        
-        
+
+        Resque.queues.each do |q_name|
+          report_metric "Q-Latency #{q_name}", q_name, Resque.latency(q_name)
+        end
 
       rescue Redis::TimeoutError
         raise 'Redis server timeout'
